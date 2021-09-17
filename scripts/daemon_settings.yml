@@ -1,0 +1,4 @@
+allowed_origin: "*"
+api: 0.0.0.0:5279
+streaming_server: 127.0.0.1:5280
+use_upnp: false

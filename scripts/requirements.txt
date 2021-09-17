@@ -1,0 +1,7 @@
+youtube-dl==2021.6.6
+redis==3.5.3
+peewee==3.14.4
+timeflake==0.4.0
+flask==2.0.1
+bunch==1.0.1
+pybry==1.6.4

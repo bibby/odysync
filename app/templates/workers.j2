@@ -1,0 +1,27 @@
+{% extends "base.j2" %}
+
+{% block content %}
+<div>
+    <table class="pure-table">
+        <thead>
+            <tr>
+                <th>Worker</th>
+                <th>Status</th>
+                <th>Info</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% set row_class = cycler('odd', 'even') %}
+        {% for w in worker_status %}
+            <tr class="pure-table-{{ row_class.next() }}">
+                <td>{{w.worker}}</td>
+                <td>{{w.status}}</td>
+                <td>{{w.info}}</td>
+            </tr>
+        </tbody>
+        {% endfor %}
+    </table>
+</div>
+
+{% endblock %}

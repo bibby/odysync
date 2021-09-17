@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pure.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
+    <title>{% block title %}{% endblock %}</title>
+    {% endblock %}
+</head>
+<body>
+    <div id="header">
+        {% include 'header.j2' %}
+    </div>
+    <div id="content">{% block content %}{% endblock %}</div>
+
+    {% block scripts %}
+    <script>
+      (function (window, document) {
+      document.getElementById('toggle').addEventListener('click', function (e) {
+          document.getElementById('tuckedMenu').classList.toggle('custom-menu-tucked');
+          document.getElementById('toggle').classList.toggle('x');
+      });
+      })(this, this.document);
+      </script>
+    {% endblock %}
+</body>
+</html>

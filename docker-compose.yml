@@ -1,0 +1,15 @@
+---
+version: "2.4"
+services:
+  odysync-redis:
+    container_name: odysync_redis
+    image: redis
+
+  odysync-web:
+    container_name: odysync_web
+    image: odysync
+    volumes:
+      - ./vol/db:/data
+      - ./vol/lbrynet/lbryum:/root/.local/share/lbry/lbryum
+    ports:
+      - 3000:3000
