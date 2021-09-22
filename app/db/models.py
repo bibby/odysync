@@ -1,21 +1,13 @@
 import os
 import sys
 import inspect
-import errno
 from peewee import *
+from db.util import action
+from db.util import mkdir_p
+from munch import Munch
 
-DB_DIR = os.environ.get('DATA_VOLUME', '.') + "/db"
+DB_DIR = os.environ.get('DATA_VOLUME', '.')
 DB_FILE = DB_DIR + "/odysync.db"
-
-
-def mkdir_p(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc:
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
 
 
 class BaseModel(Model):
@@ -24,8 +16,8 @@ class BaseModel(Model):
 
 
 class ChannelSite:
-    LBRY=1
-    YOUTUBE=2
+    LBRY = 1
+    YOUTUBE = 2
 
     @staticmethod
     def to_name(n):
@@ -37,6 +29,7 @@ class ChannelSite:
 
 class Channel(BaseModel):
     id = CharField(primary_key=True, index=True, unique=True)
+    name = CharField()
     site = IntegerField(default=0)
 
     @property
@@ -45,11 +38,31 @@ class Channel(BaseModel):
             return 'https://www.youtube.com/c/{}/videos'.format(self.id)
         return NotImplementedError
 
-    def serial(self):
-        return dict(
+    def serial(self, actions=None):
+        d = Munch(
             id=self.id,
-            site=ChannelSite.to_name(self.site)
+            site=ChannelSite.to_name(self.site),
+            name=self.name,
         )
+
+        if actions:
+            d.update(dict(actions=[
+                action(
+                    'delete',
+                    '/channel/{}/delete'.format(self.id),
+                    style='error',
+                    xhr=None,
+                )
+            ]))
+
+            if self.site == ChannelSite.YOUTUBE:
+                d.actions.append(action(
+                    'sync',
+                    '/channel/{}/sync'.format(self.id),
+                    style="success",
+                    xhr=None,
+                ))
+        return d
 
 
 class VideoState:
@@ -88,12 +101,23 @@ class Video(BaseModel):
     title = TextField(null=True)
     state = IntegerField(default=0)
 
-    def serial(self):
-        return dict(
+    def serial(self, actions=None):
+        d = Munch(
             id=self.id,
             title=self.title,
             state=VideoState.to_name(self.state),
+            channel=Munch(
+                name=self.channel.name,
+                site=ChannelSite.to_name(self.channel.site),
+            )
         )
+
+        if actions:
+            d.update(dict(actions=[
+
+            ]))
+
+        return d
 
 
 class Sync(BaseModel):

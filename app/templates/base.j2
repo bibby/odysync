@@ -11,17 +11,27 @@
     <div id="header">
         {% include 'header.j2' %}
     </div>
-    <div id="content">{% block content %}{% endblock %}</div>
+    <div id="toast" class="hidden">
+        <div id="toast_close">&#215;</div>
+        <div id="toast_text">toast text</div>
+    </div>
+    <div id="content">
+        {% block content %}
+        <div class="pure-g">
+            <div class="pure-u-4-5">
+                {% block left_column %}
+                {% endblock %}
+            </div>
+            <div class="pure-u-1-5">
+                {% block right_column %}
+                {% endblock %}
+            </div>
+        </div>
+        {% endblock %}
+    </div>
 
     {% block scripts %}
-    <script>
-      (function (window, document) {
-      document.getElementById('toggle').addEventListener('click', function (e) {
-          document.getElementById('tuckedMenu').classList.toggle('custom-menu-tucked');
-          document.getElementById('toggle').classList.toggle('x');
-      });
-      })(this, this.document);
-      </script>
+    <script text="text/javascript" src="{{ url_for('static', filename='js/index.js') }}"></script>
     {% endblock %}
 </body>
 </html>

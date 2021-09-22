@@ -1,8 +1,20 @@
 {% extends "base.j2" %}
 
-{% block content %}
-<div>
-    hey there, cupcake
-</div>
+
+{% block left_column %}
+
+{% include "lbry_setup.j2" with context %}
+
+{% include "workers.j2" with context %}
+
+{% include "channels.j2" with context %}
+
+{% include "videos.j2" with context %}
+
+{% endblock %}
+
+
+
+{% block right_column %}
 
 {% endblock %}

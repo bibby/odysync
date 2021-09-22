@@ -1,0 +1,36 @@
+{% extends "base.j2" %}
+
+
+{% block left_column %}
+<div id="channel">
+    <h1>Add Channel</h1>
+
+    {% if error %}
+    <div class="error">! {{error}}</div>
+    {% endif %}
+
+    {% if message %}
+    <div class="success">{{message}}</div>
+    {% endif %}
+
+    <hr />
+    <p>
+        Provide the <i>identifying</i> portion of your channel URL.<br />
+        <i>e.g.,</i>  <code>https://youtube.com/channel/<b>{% raw %}{{channel_id}}{% endraw %}</b></code><br />
+        or <code>https://www.youtube.com/c/<b>{% raw %}{{channel_id}}{% endraw %}</b></code>
+
+    </p>
+
+    <form action="/channel/add" method="post" class="pure-form">
+        <input type="text" placeholder="Channel ID" name="channel_id" />
+        <br />
+        <button type="submit" class="pure-button">Submit</button>
+    </form>
+</div>
+{% endblock %}
+
+
+
+{% block right_column %}
+
+{% endblock %}

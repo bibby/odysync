@@ -1,27 +1,49 @@
-{% extends "base.j2" %}
-
-{% block content %}
-<div>
+<div id="workers">
+    <h2>Background Workers</h2>
+    {% if worker_status %}
+    <small><code>{{now}}</code></small>
     <table class="pure-table">
         <thead>
             <tr>
                 <th>Worker</th>
                 <th>Status</th>
-                <th>Info</th>
+                <th>Queue</th>
+                <th>Control</th>
             </tr>
         </thead>
 
         <tbody>
         {% set row_class = cycler('odd', 'even') %}
         {% for w in worker_status %}
-            <tr class="pure-table-{{ row_class.next() }}">
+            {% set rc = row_class.next() %}
+            <tr class="pure-table-{{ rc }}">
                 <td>{{w.worker}}</td>
                 <td>{{w.status}}</td>
-                <td>{{w.info}}</td>
+                <td>{{w.queue}}</td>
+                <td>
+                    {% for action in w.actions %}
+                    <button class="pure-button button-small{% if action.style %}
+                    button-{{action.style}}{% endif %}" onclick="execCmd('{{action.uri}}')">
+                        {{action.text}}
+                    </button>
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr class="pure-table-{{ rc }}">
+                <td colspan="4">
+                    <small>
+                        <i>
+                            {{w.info}}
+                        </i>
+                    </small>
+                </td>
             </tr>
         </tbody>
         {% endfor %}
     </table>
+    {% else %}
+    <i>
+        waiting for update..
+    </i>
+    {% endif %}
 </div>
-
-{% endblock %}

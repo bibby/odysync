@@ -1,0 +1,53 @@
+<div id="videos">
+    <h2>Videos ({{videos | length}})</h2>
+    {% if videos %}
+    <small><code>{{now}}</code></small>
+    <table class="pure-table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Site</th>
+                <th>Channel</th>
+                <th>Title</th>
+                <th>State</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% set row_class = cycler('odd', 'even') %}
+        {% for item in videos %}
+            <tr class="pure-table-{{ row_class.next() }}">
+                <td>
+                    {% if item.channel.site == "YOUTUBE" %}
+                    <a href="https://youtu.be/{{item.id}}" target="{{item.id}}">{{item.id}}</a>
+                    {% else %}
+                    {{item.id}}
+                    {% endif %}
+                </td>
+                <td>
+                    {{item.channel.site}}
+                </td>
+                <td>
+                    {{item.channel.name}}
+                </td>
+                <td>{{item.title}}</td>
+                <td>{{item.state}}</td>
+                <td>
+                    {% for action in item.actions %}
+                    <button class="pure-button button-small{% if action.style %}
+                    button-{{action.style}}{% endif %}">
+                        {{action.text}}
+                    </button>
+                    {% endfor %}
+                </td>
+            </tr>
+        </tbody>
+        {% endfor %}
+    </table>
+    {% else %}
+    <i>
+        No channels.
+    </i>
+    {% endif %}
+</div>

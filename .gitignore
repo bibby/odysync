@@ -1,3 +1,6 @@
 tmp
 vol
+*.db-shm
+*.db-wal
+*.db
 

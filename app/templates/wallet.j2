@@ -1,0 +1,35 @@
+{% extends "base.j2" %}
+
+
+{% block left_column %}
+<div id="wallet">
+    <h1>Wallet</h1>
+
+    {% if not exists %}
+    message here about no wallet at <code>{{wallet_path}}</code>.
+    {% endif %}
+
+    {% if error %}
+    <div class="error">! {{error}}</div>
+    {% endif %}
+
+    <hr />
+    <form action="/wallet/edit" method="post" class="pure-form">
+    <textarea name="wallet"></textarea>
+    <br />
+    <button type="submit" class="pure-button">Submit</button>
+    </form>
+    <hr />
+    <h3>Current File</h3>
+    <pre>{{wallet_json | safe}}</pre>
+
+
+
+</div>
+{% endblock %}
+
+
+
+{% block right_column %}
+
+{% endblock %}

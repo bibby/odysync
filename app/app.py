@@ -1,13 +1,24 @@
 import os
-from bunch import Bunch
-from flask import Flask, jsonify, request, render_template, jsonify
+import json
+from munch import Munch, munchify
+from flask import Flask, jsonify, request, render_template, jsonify, redirect
 from db.models import VideoState, Video, Channel, ChannelSite
-from db.queue import infoQ, downQ, transQ, upQ
-from db.shell import worker_status, worker_cmd
+from db.queue import infoQ, downQ, transQ, upQ, CHANNEL, VIDEO
+from db.shell import worker_status, worker_cmd, lbry_setup_steps, open_wallet, WALLET_PATH
 from youtube_dl import YoutubeDL
 from youtube_dl.extractor.youtube import YoutubeTabIE as Info
+from logger import log
+from db.youtube import fetch_channel
+from pybry.lbryd_api import LbrydApi
+
+import time
 
 app = Flask(__name__)
+lbry = LbrydApi()
+
+
+def now():
+    return "updated " + time.strftime('%H:%M:%S %Z')
 
 
 @app.after_request
@@ -26,40 +37,131 @@ def add_cors_headers(response):
 
 @app.route('/')
 def index():
-    return render_template('index.j2')
+    tpl_params = dict(
+        channels=get_channels(),
+        videos=get_videos()
+    )
+    return render_template('index.j2', **tpl_params)
 
-@app.route('/channel/youtube')
-def add_youtube():
-    channel_id = "RobbieBarnby"
-    channel, created = Channel.get_or_create(id=channel_id, site=ChannelSite.YOUTUBE)
 
-    downloader = YoutubeDL()
-    info = Info(downloader=downloader)
+@app.route('/wallet/edit', methods=["GET", "POST"])
+def wallet_edit():
+    error = None
+    if request.method == 'POST':
+        wallet_json = request.form['wallet']
+        try:
+            wallet_json = json.loads(wallet_json)
+            if "accounts" not in wallet_json:
+                error = "JSON has no accounts"
 
-    ex = info.extract(channel.url)
-    #ex = Bunch(entries=[])
+            with open(WALLET_PATH, 'w') as w:
+                w.write(json.dumps(wallet_json, indent=2))
+        except json.decoder.JSONDecodeError:
+            error = "Not valid json"
+        except Exception as e:
+            error = e
 
-    for v in ex.get("entries"):
-        v = Bunch(v)
-        Video.get_or_create(
-            id=v.id,
-            channel=channel,
-            defaults=dict(
-                state=VideoState.NEW,
-                title=v.title,
+    wallet = open_wallet()
+    has_wallet = False
+    if wallet:
+        has_wallet = True
+        try:
+            wallet = json.dumps(wallet, indent=2)
+        except:
+            pass
+
+    tpl_params = dict(
+        exists=has_wallet,
+        wallet_path=WALLET_PATH,
+        wallet_json=wallet,
+        error=error
+    )
+
+    return render_template('wallet.j2', **tpl_params)
+
+
+@app.route('/workers')
+def workers():
+    status = worker_status()
+    log.debug("worker status type = %s", type(status))
+
+    tpl_params = dict(now=now())
+    if "error" in status:
+        tpl_params['error'] = status.error
+    if "message" in status:
+        tpl_params['worker_status'] = status.message
+
+    return render_template('workers.j2', **tpl_params)
+
+
+@app.route('/lbry_setup')
+def lbry_steps():
+    tpl_params = dict(
+        lbry_setup_steps=lbry_setup_steps(),
+        now=now(),
+    )
+
+    return render_template('lbry_setup.j2', **tpl_params)
+
+
+@app.route('/channel/add', methods=["GET", "POST"])
+def channel_add():
+    tpl_params = dict()
+    err = None
+    msg = None
+    if request.method == "POST":
+        try:
+            chan_id = request.form['channel_id'].strip()
+            res = fetch_channel(chan_id)
+            channel, created = Channel.get_or_create(
+                id=chan_id,
+                defaults=dict(
+                    name=str(res.title).strip('- Videos'),
+                    site=ChannelSite.YOUTUBE,
+                )
             )
-        )
+            video_count = 0
+            for vid in res.entries:
+                _vid, _created = Video.get_or_create(
+                    id=vid.id,
+                    channel=channel,
+                    defaults=dict(
+                        title=vid.title,
+                        state=VideoState.NEW,
+                    )
+                )
+                video_count += 1
 
-    queue_infos(channel)
-    return jsonify(get_videos(channel))
+            msg = "Imported {} videos from {}".format(video_count, channel)
+
+        except Exception as e:
+            err = str(e)
+
+        tpl_params.update(dict(
+            error=err,
+            message=msg
+        ))
+
+    return render_template('channel_add.j2', **tpl_params)
 
 
-@app.route('/set_channel', methods=['POST'])
-def set_channel():
-    channel = request.form['']
+def get_channels():
+    chans = []
+    for c in Channel.select():
+        chans.append(c.serial(actions=True))
+
+    return chans
 
 
-def get_videos(channel):
+def get_videos():
+    vids = []
+    for v in Video.select():
+        vids.append(v.serial(actions=True))
+
+    return vids
+
+
+def _get_videos(channel):
     vids = []
     for v in Video.select()\
             .where(Video.channel == channel):
@@ -80,11 +182,6 @@ def queue_infos(channel):
         v.save()
 
 
-@app.route('/workers')
-def workers():
-    return render_template('workers.j2', worker_status=worker_status())
-
-
 @app.route('/worker/status', methods=['GET'])
 def get_worker_status():
     return jsonify(worker_status())
@@ -95,5 +192,68 @@ def set_worker_status(worker, status):
     return worker_cmd(worker, status)
 
 
+@app.route('/lbry/index', methods=["GET"])
+def lbry_channel_index():
+    try:
+        res, resp = lbry.channel_list()
+    except:
+        return False
+
+    channels = dict()
+    for chan in res.get("items"):
+        channel, created = Channel.get_or_create(
+            id=chan.get("claim_id"),
+            defaults=dict(
+                name=chan.get("name"),
+                site=ChannelSite.LBRY,
+            )
+        )
+
+        channels[channel.id] = channel
+
+    video_count = 0
+    for vid in lbry_get_videos():
+        vid = munchify(vid)
+        _vid, _created = Video.get_or_create(
+            id=vid.claim_id,
+            channel=channels[vid.signing_channel.claim_id],
+            defaults=dict(
+                title=vid.value.title,
+                state=VideoState.UPLOADED,
+            )
+        )
+        video_count += 1
+
+        msg = "Imported {} videos from {}".format(video_count, channel)
+
+    return redirect('/')
+
+
+def lbry_get_videos(page=1, recursed=None):
+    res, resp = lbry.stream_list(page=page, page_size=20)
+    if recursed:
+        return res.get("items")
+
+    accum = res.get("items")
+    page = res.get("page")
+    total = min(res.get("total_pages"), 2)
+    if page < total:
+        for p in range(page, total):
+            accum += lbry_get_videos(p + 1, recursed=True)
+    return accum
+
+
+@app.route('/channel/<chan>/delete', methods=["GET"])
+def channel_delete(chan):
+    try:
+        channel = Channel.get(Channel.id == chan)
+        channel.delete_instance(recursive=True)
+    except Exception as e:
+        raise
+
+    return redirect('/')
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=os.environ.get('WEBPORT', 3000))
+
+

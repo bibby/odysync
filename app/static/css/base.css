@@ -1,3 +1,8 @@
+.hidden {
+    display: none;
+}
+
+
 #content {
     margin:2%;
 }
@@ -153,4 +158,87 @@
       overflow: hidden;
   }
 
+}
+
+.button-success,
+.button-error,
+.button-warning,
+.button-secondary {
+    color: white;
+    border-radius: 4px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.button-success {
+    background: rgb(28, 184, 65);
+    /* this is a green */
+}
+
+.button-error {
+    background: rgb(202, 60, 60);
+    /* this is a maroon */
+}
+
+.button-warning {
+    background: rgb(223, 117, 20);
+    /* this is an orange */
+}
+
+.button-secondary {
+    background: rgb(66, 184, 221);
+    /* this is a light blue */
+}
+
+
+
+div#toast {
+    position: fixed;
+    z-index: 10;
+    border: 1px solid black;
+    width: 30%;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    right: 20px;
+    background-color: #def9ff;
+    box-shadow: 0 4px 10px rgb(0 0 0 / 20%);
+}
+
+#toast_close {
+    float: right;
+    margin: 12px;
+    border: 1px solid black;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    background-color: #e2e2e2;
+    cursor: pointer;
+}
+
+#toast_text {
+    margin: 16px;
+    text-align: left;
+}
+
+.toast-err {
+    background-color: #fd9090 !important;
+}
+
+#wallet textarea{
+    width: 30vw;
+    height: 10vh;
+}
+
+.error {
+    background: rgb(202, 60, 60);
+    border: 1px solid black;
+    padding: 8px;
+    margin: 24px;
+}
+
+.success {
+    background: rgb(60, 202, 60);
+    border: 1px solid black;
+    padding: 8px;
+    margin: 24px;
 }

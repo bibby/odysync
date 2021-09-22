@@ -1,0 +1,44 @@
+<div id="channels">
+    <h2>Channels ({{channels|length}})</h2>
+    {% if channels | length > 0 %}
+    <small><code>{{now}}</code></small>
+    <table class="pure-table">
+        <thead>
+            <tr>
+                <th>Site</th>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% set row_class = cycler('odd', 'even') %}
+        {% for item in channels %}
+            <tr class="pure-table-{{ row_class.next() }}">
+                <td>{{item.site}}</td>
+                <td>{{item.id}}</td>
+                <td>{{item.name}}</td>
+                <td>
+                    {% for action in item.actions %}
+                    {% if action.xhr %}
+                    {% set fn="execCmd" %}
+                    {% else %}
+                    {% set fn="nav" %}
+                    {% endif %}
+                    <button class="pure-button button-small{% if action.style %}
+                    button-{{action.style}}{% endif %}" onclick="{{fn}}('{{action.uri}}')">
+                        {{action.text}}
+                    </button>
+                    {% endfor %}
+                </td>
+            </tr>
+        </tbody>
+        {% endfor %}
+    </table>
+    {% else %}
+    <i>
+        No channels.
+    </i>
+    {% endif %}
+</div>

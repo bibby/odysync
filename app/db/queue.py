@@ -7,6 +7,7 @@ redis_client = redis.StrictRedis(
         db=0
     )
 
+
 class Queue:
     def __init__(self, queue):
         self.queue = queue
@@ -21,12 +22,21 @@ class Queue:
         return redis_client.llen(self.queue)
 
 
-INFO_QUEUE="to_info"
-DOWN_QUEUE="to_download"
-TRANSCODE_QUEUE="to_trans"
-UP_QUEUE="to_upload"
+INFO_QUEUE = "to_info"
+DOWN_QUEUE = "to_download"
+TRANSCODE_QUEUE = "to_trans"
+UP_QUEUE = "to_upload"
+
+CHANNEL = "channel"
+VIDEO = "video"
 
 infoQ = Queue(INFO_QUEUE)
 downQ = Queue(DOWN_QUEUE)
 transQ = Queue(TRANSCODE_QUEUE)
 upQ = Queue(UP_QUEUE)
+
+
+TMP_VOLUME = os.environ.get('TMP_VOLUME', '/tmp/odysync')
+INFO_TMP = os.path.join(TMP_VOLUME, 'info')
+DOWN_TMP = os.path.join(TMP_VOLUME, 'down')
+TRANSCODE_TMP = os.path.join(TMP_VOLUME, 'transcode')
