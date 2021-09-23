@@ -1,29 +1,10 @@
 import os
 import time
 from db.util import mkdir_p
-from db.queue import infoQ, INFO_TMP
+from db.queue import infoQ, INFO_TMP, downQ
 from db.shell import shell
 from db.models import Video, VideoState
 from youtube_dl import YoutubeDL
-
-
-def set_state(vid_id, state):
-    if vid_id is False:
-        return False
-
-    err_class = Video.DoesNotExist
-    if isinstance(vid_id, Video):
-        vid = vid_id
-    else:
-        try:
-            vid = Video.get(Video.id == vid_id)
-        except err_class as e:
-            print(str(e))
-            return False
-
-    vid.state = state
-    vid.save()
-    return vid
 
 
 def get_info(vid_id):
@@ -63,7 +44,9 @@ def fix_webp(vid_id):
 
 if __name__ == '__main__':
     print("Info worker started")
+    force = True
     mkdir_p(INFO_TMP)
+
     while True:
         vid_id = infoQ.dequeue()
 
@@ -71,11 +54,11 @@ if __name__ == '__main__':
             vid_id = vid_id.decode()
             print(vid_id)
 
-            vid = set_state(vid_id, VideoState.INFOING)
-            if isinstance(vid_id, Video):
+            vid = Video.set_state(vid_id, VideoState.INFOING)
+            if isinstance(vid_id, Video) or force:
                 get_info(vid_id)
                 fix_webp(vid_id)
-                set_state(vid, VideoState.INFO)
+                Video.set_state(vid, VideoState.INFO)
+                downQ.enqueue(vid_id)
 
         time.sleep(1)
-

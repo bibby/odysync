@@ -286,14 +286,15 @@ def lbrynet_running():
     return status.message.status == 'RUNNING'
 
 
-def open_wallet():
+def open_wallet(sanitary=True):
     if not os.path.isfile(WALLET_PATH):
         return ''
     with open(WALLET_PATH, 'r') as w:
         wallet = w.read()
         try:
             wallet = json.loads(wallet)
-            wallet = sanitize_wallet(wallet)
+            if sanitary:
+                wallet = sanitize_wallet(wallet)
         except:
             pass
 

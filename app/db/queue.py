@@ -24,8 +24,9 @@ class Queue:
 
 INFO_QUEUE = "to_info"
 DOWN_QUEUE = "to_download"
-TRANSCODE_QUEUE = "to_trans"
+TRANSCODE_QUEUE = "to_transcode"
 UP_QUEUE = "to_upload"
+MSG_QUEUE = "to_msg"
 
 CHANNEL = "channel"
 VIDEO = "video"
@@ -34,6 +35,7 @@ infoQ = Queue(INFO_QUEUE)
 downQ = Queue(DOWN_QUEUE)
 transQ = Queue(TRANSCODE_QUEUE)
 upQ = Queue(UP_QUEUE)
+msgQ = Queue(MSG_QUEUE)
 
 
 TMP_VOLUME = os.environ.get('TMP_VOLUME', '/tmp/odysync')

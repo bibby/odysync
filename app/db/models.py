@@ -31,6 +31,7 @@ class Channel(BaseModel):
     id = CharField(primary_key=True, index=True, unique=True)
     name = CharField()
     site = IntegerField(default=0)
+    address = CharField(null=True)
 
     @property
     def url(self):
@@ -118,6 +119,25 @@ class Video(BaseModel):
             ]))
 
         return d
+
+    @staticmethod
+    def set_state(vid_id, state):
+        if vid_id is False:
+            return False
+
+        err_class = Video.DoesNotExist
+        if isinstance(vid_id, Video):
+            vid = vid_id
+        else:
+            try:
+                vid = Video.get(Video.id == vid_id)
+            except err_class as e:
+                print(str(e))
+                return False
+
+        vid.state = state
+        vid.save()
+        return vid
 
 
 class Sync(BaseModel):

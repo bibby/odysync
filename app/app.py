@@ -206,6 +206,7 @@ def lbry_channel_index():
             defaults=dict(
                 name=chan.get("name"),
                 site=ChannelSite.LBRY,
+                address=chan.get("address"),
             )
         )
 
@@ -252,6 +253,7 @@ def channel_delete(chan):
         raise
 
     return redirect('/')
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=os.environ.get('WEBPORT', 3000))
