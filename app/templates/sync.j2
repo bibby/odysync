@@ -1,0 +1,87 @@
+{% extends "base.j2" %}
+
+
+{% block left_column %}
+<div id="sync_conf">
+    <h1>Sync Config</h1>
+
+    {% if error %}
+    <div class="error">! {{error}}</div>
+    {% endif %}
+
+    {% if message %}
+    <div class="success"><code>{{now}}</code> {{message}}</div>
+    {% endif %}
+
+    <hr />
+    <p>
+    Instructions..
+    </p>
+
+    <form action="/sync/config" method="post" class="pure-form">
+        <label for="src_channel">
+            YouTube Channel<br />
+            <select name="src_channel">
+                {% for channel in yt_channels %}
+                <option value="{{channel.id}}">{{channel.name}} ({{channel.site}})</option>
+                {% endfor %}
+            </select>
+        </label>
+        <br />
+
+
+        <label for="dest_channel">
+            LBRY Channel<br />
+            <select name="dest_channel">
+                {% for channel in lb_channels %}
+                <option value="{{channel.id}}">{{channel.name}} ({{channel.site}})</option>
+                {% endfor %}
+            </select>
+        </label>
+        <br />
+
+        <label for="bid">
+            Bid<br />
+            <input type="text" name="bid" value="{{bid}}" placeholder="{{default_bid}}" />
+        </label>
+        <br />
+
+        <label for="tags">
+            Tags<br />
+            1) <input type="text" name="tag1" value="{{tag1}}" /><br />
+            2) <input type="text" name="tag2" value="{{tag2}}" /><br />
+            3) <input type="text" name="tag3" value="{{tag3}}" /><br />
+        </label>
+        <br />
+
+        <label for="language">
+            Language<br />
+            <select name="language">
+                {% for lang in languages %}
+                <option value="{{lang.id}}">{{lang.name}}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <br />
+
+        <label for="license">
+            License<br />
+            <select name="license">
+                {% for license in licenses %}
+                <option value="{{license.id}}">{{license.name}}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <br />
+
+        <button type="submit" class="pure-button">Submit</button>
+    </form>
+</div>
+{% endblock %}
+
+
+
+{% block right_column %}
+
+{% endblock %}
+

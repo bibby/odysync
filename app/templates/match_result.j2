@@ -1,0 +1,85 @@
+{% extends "base.j2" %}
+
+
+{% block left_column %}
+<div id="match_res">
+    <h1>Match Result</h1>
+
+    {% if error %}
+    <div class="error">! {{error}}</div>
+    {% endif %}
+
+    {% if message %}
+    <div class="success"><code>{{now}}</code> {{message}}</div>
+    {% endif %}
+
+    <p>
+    Instructions..
+    </p>
+
+
+    <hr />
+    <h2>Matched and Resolved ({{resolved|length}})</h2>
+
+
+    <hr />
+    <h2>Unmatched ({{solo|length}})</h2>
+
+    <button class="pure-button button-small button-success" onclick="nav('/channel/{{chan_id}}/unmatch/sync')">
+        Sync Unmatched to LBRY
+    </button>
+
+    <table class="pure-table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Site</th>
+                <th>Channel</th>
+                <th>Title</th>
+                <th>State</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% set row_class = cycler('odd', 'even') %}
+        {% for item in solo %}
+            <tr class="pure-table-{{ row_class.next() }}">
+                <td>
+                    {% if item.channel.site == "YOUTUBE" %}
+                    <a href="https://youtu.be/{{item.id}}" target="{{item.id}}">{{item.id}}</a>
+                    {% else %}
+                    {{item.id}}
+                    {% endif %}
+                </td>
+                <td>
+                    {{item.channel.site}}
+                </td>
+                <td>
+                    {{item.channel.name}}
+                </td>
+                <td>{{item.title}}</td>
+                <td>{{item.state}}</td>
+            </tr>
+        </tbody>
+        {% endfor %}
+    </table>
+
+    <hr />
+    <h2>Multiple Matched ({{odd|length}})</h2>
+    {% for r in odd %}
+    <code>{{r}}</code><br />
+    {% endfor %}
+
+
+
+
+
+</div>
+{% endblock %}
+
+
+
+{% block right_column %}
+
+{% endblock %}
+

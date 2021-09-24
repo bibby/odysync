@@ -2,9 +2,10 @@ import os
 import json
 from munch import Munch, munchify
 from flask import Flask, jsonify, request, render_template, jsonify, redirect
-from db.models import VideoState, Video, Channel, ChannelSite
-from db.queue import infoQ, downQ, transQ, upQ, CHANNEL, VIDEO
+from db.models import VideoState, Video, Channel, ChannelSite, Config
+from db.queue import infoQ, downQ, transQ, upQ, CHANNEL, VIDEO, QMap
 from db.shell import worker_status, worker_cmd, lbry_setup_steps, open_wallet, WALLET_PATH
+from db.util import langs, licenses, DEFAULT_BID, mkdir_p
 from youtube_dl import YoutubeDL
 from youtube_dl.extractor.youtube import YoutubeTabIE as Info
 from logger import log
@@ -18,7 +19,7 @@ lbry = LbrydApi()
 
 
 def now():
-    return "updated " + time.strftime('%H:%M:%S %Z')
+    return time.strftime('%H:%M:%S %Z')
 
 
 @app.after_request
@@ -54,6 +55,9 @@ def wallet_edit():
             if "accounts" not in wallet_json:
                 error = "JSON has no accounts"
 
+            wallet_base = os.path.dirname(WALLET_PATH)
+            if not os.path.isdir(wallet_base):
+                mkdir_p(wallet_base)
             with open(WALLET_PATH, 'w') as w:
                 w.write(json.dumps(wallet_json, indent=2))
         except json.decoder.JSONDecodeError:
@@ -97,7 +101,7 @@ def workers():
 @app.route('/lbry_setup')
 def lbry_steps():
     tpl_params = dict(
-        lbry_setup_steps=lbry_setup_steps(),
+        lbry_setup_steps=lbry_setup_steps(Channel.for_site(ChannelSite.LBRY)),
         now=now(),
     )
 
@@ -189,15 +193,31 @@ def get_worker_status():
 
 @app.route('/worker/<worker>/<status>', methods=['GET'])
 def set_worker_status(worker, status):
+    if status == 'wipe':
+        return worker_wipe(worker)
     return worker_cmd(worker, status)
 
 
+def worker_wipe(worker):
+    try:
+        QMap.get(worker).wipe()
+    except:
+        pass
+
+    return Munch(
+        message="wiped " + worker,
+        ret=0
+    )
+
 @app.route('/lbry/index', methods=["GET"])
 def lbry_channel_index():
+    res = None
     try:
         res, resp = lbry.channel_list()
-    except:
-        return False
+    except Exception as e:
+        log.info(res)
+        log.exception(e)
+        return redirect('/')
 
     channels = dict()
     for chan in res.get("items"):
@@ -237,7 +257,7 @@ def lbry_get_videos(page=1, recursed=None):
 
     accum = res.get("items")
     page = res.get("page")
-    total = min(res.get("total_pages"), 2)
+    total = res.get("total_pages")
     if page < total:
         for p in range(page, total):
             accum += lbry_get_videos(p + 1, recursed=True)
@@ -253,6 +273,84 @@ def channel_delete(chan):
         raise
 
     return redirect('/')
+
+
+@app.route('/channel/<chan_id>/match', methods=["GET"])
+def channel_match(chan_id):
+    try:
+        channel = Channel.get(Channel.id == chan_id)
+        matches = channel.match_others()
+        tpl_params = dict(
+            channel=channel.serial(),
+            chan_id = chan_id,
+            **matches,
+        )
+        return render_template("match_result.j2", **tpl_params)
+    except Exception as e:
+        raise
+
+    return redirect('/')
+
+
+@app.route('/channel/<chan_id>/unmatch/sync', methods=["GET"])
+def channel_unmatch_sync(chan_id):
+    channel = Channel.get(Channel.id == chan_id)
+    matches = channel.match_others()
+
+    for v in list(reversed(matches.solo)):
+        infoQ.enqueue(v.id)
+
+    return redirect('/')
+
+
+@app.route('/sync/config', methods=['GET', 'POST'])
+def sync_config():
+
+    error = None
+    message = None
+    if request.method == 'POST':
+        try:
+            Config.set_all(request.form)
+            message = "Saved settings"
+        except Exception as e:
+            error = str(e)
+
+    conf = Config.load()
+
+    def serial_site(site):
+        return list(map(
+           Channel.serial_map,
+           Channel.for_site(site),
+       ))
+
+    settings = Munch(
+        language=None,
+        licence=None,
+        tag1=None,
+        tag2=None,
+        tag3=None,
+        bid=DEFAULT_BID,
+    )
+
+    for k in settings.keys():
+        if k in conf:
+            settings[k] = conf[k]
+
+    tpl_params = dict(
+        error=error,
+        message=message,
+        yt_channels=serial_site(ChannelSite.YOUTUBE),
+        lb_channels=serial_site(ChannelSite.LBRY),
+        licenses=licenses(),
+        languages=langs(),
+        now=now(),
+        default_bid=DEFAULT_BID,
+        **{
+            k: v or "" for k, v in settings.items()
+        },
+    )
+
+    return render_template('sync.j2', **tpl_params)
 
 
 if __name__ == '__main__':

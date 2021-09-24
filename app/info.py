@@ -11,7 +11,6 @@ def get_info(vid_id):
     params = dict(
         skip_download=True,
         writeinfojson=True,
-        writethumbnail=True,
         nooverwrites=True,
         outtmpl=os.path.join(INFO_TMP, "%(id)s.%(ext)s"),
     )
@@ -44,7 +43,7 @@ def fix_webp(vid_id):
 
 if __name__ == '__main__':
     print("Info worker started")
-    force = True
+    force = False
     mkdir_p(INFO_TMP)
 
     while True:
@@ -54,11 +53,15 @@ if __name__ == '__main__':
             vid_id = vid_id.decode()
             print(vid_id)
 
-            vid = Video.set_state(vid_id, VideoState.INFOING)
-            if isinstance(vid_id, Video) or force:
-                get_info(vid_id)
-                fix_webp(vid_id)
-                Video.set_state(vid, VideoState.INFO)
-                downQ.enqueue(vid_id)
+            try:
+                vid = Video.set_state(vid_id, VideoState.INFOING)
+                if isinstance(vid, Video) or force:
+                    get_info(vid_id)
+                    # fix_webp(vid_id)
+                    Video.set_state(vid, VideoState.INFO)
+                    downQ.enqueue(vid_id)
+            except Exception as e:
+                print(e)
+                Video.set_state(vid_id, VideoState.INFO_ERROR)
 
         time.sleep(1)

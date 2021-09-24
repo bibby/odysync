@@ -22,12 +22,6 @@ RUN apt-get update && \
     supervisor \
     unzip
 
-RUN apt-get install -y \
-    lsof \
-    iputils-ping \
-    curl \
-    netcat
-
 WORKDIR /opt/src/lbrynet
 RUN git clone https://github.com/lbryio/lbry-sdk.git
 WORKDIR /opt/src/lbrynet/lbry-sdk

@@ -6,25 +6,6 @@ from db.models import Video, VideoState
 from youtube_dl import YoutubeDL
 
 
-def set_state(vid_id, state):
-    if vid_id is False:
-        return False
-
-    err_class = Video.DoesNotExist
-    if isinstance(vid_id, Video):
-        vid = vid_id
-    else:
-        try:
-            vid = Video.get(Video.id == vid_id)
-        except err_class as e:
-            print(str(e))
-            return False
-
-    vid.state = state
-    vid.save()
-    return vid
-
-
 def download_video(vid_id):
     params = dict(
         nooverwrites=True,
@@ -41,7 +22,7 @@ def download_video(vid_id):
 
 if __name__ == '__main__':
     print("Download worker started")
-    force = True
+    force = False
     mkdir_p(DOWN_TMP)
     while True:
         vid_id = downQ.dequeue()
@@ -50,10 +31,14 @@ if __name__ == '__main__':
             vid_id = vid_id.decode()
             print(vid_id)
 
-            vid = set_state(vid_id, VideoState.DOWNLOADING)
-            if isinstance(vid_id, Video) or force:
-                download_video(vid_id)
-                set_state(vid, VideoState.DOWNLOADED)
-                transQ.enqueue(vid_id)
+            vid = Video.set_state(vid_id, VideoState.DOWNLOADING)
+            try:
+                if isinstance(vid, Video) or force:
+                    download_video(vid_id)
+                    Video.set_state(vid, VideoState.DOWNLOADED)
+                    transQ.enqueue(vid_id)
+            except Exception as e:
+                print(e)
+                Video.set_state(vid_id, VideoState.DOWNLOAD_ERROR)
 
         time.sleep(1)

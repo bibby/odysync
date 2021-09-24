@@ -2,12 +2,11 @@ import os
 import sys
 import inspect
 from peewee import *
-from db.util import action
-from db.util import mkdir_p
+from db.util import action, mkdir_p, is_float
 from munch import Munch
 
 DB_DIR = os.environ.get('DATA_VOLUME', '.')
-DB_FILE = DB_DIR + "/odysync.db"
+DB_FILE = os.path.join(DB_DIR, "odysync.db")
 
 
 class BaseModel(Model):
@@ -56,6 +55,14 @@ class Channel(BaseModel):
                 )
             ]))
 
+            if self.site == ChannelSite.LBRY:
+                d.actions.append(action(
+                    'match',
+                    '/channel/{}/match'.format(self.id),
+                    style="success",
+                    xhr=None,
+                ))
+
             if self.site == ChannelSite.YOUTUBE:
                 d.actions.append(action(
                     'sync',
@@ -65,6 +72,67 @@ class Channel(BaseModel):
                 ))
         return d
 
+    @staticmethod
+    def for_site(site):
+        return list(
+            Channel.select().where(Channel.site == site))
+
+    @staticmethod
+    def serial_map(c):
+        return c.serial()
+
+    def match_others(self):
+        title_index = dict()
+
+        def state_resolve(vid):
+            if isinstance(vid, list):
+                resolve_result = []
+                for v in vid:
+                    resolve_result.append(state_resolve(v))
+                return any(resolve_result)
+
+            if vid.channel.site == ChannelSite.YOUTUBE:
+                return
+
+            if vid.channel.site == ChannelSite.LBRY:
+                if vid.state == VideoState.UPLOADED:
+                    return
+
+                if vid.state != VideoState.NEW:
+                    vid.state = VideoState.UPLOADED
+                    vid.save()
+                    return True
+
+        for v in Video.select():
+            t = v.title
+            if t not in title_index:
+                title_index[t] = []
+            title_index[t].append(v)
+
+        # resolve
+        solo = []
+        resolved = []
+        odd = []
+        for t, vids in title_index.items():
+            serials = [v.serial() for v in vids]
+
+            if len(vids) == 1:
+                solo.append(serials[0])
+                continue
+
+            if len(vids) == 2:
+                if state_resolve(vids):
+                    resolved.append(serials)
+
+            if len(vids) > 2:
+                odd.append(serials)
+
+        return Munch(
+            odd=odd,
+            solo=solo,
+            resolved=resolved,
+        )
+
 
 class VideoState:
     ERROR = 6
@@ -72,12 +140,16 @@ class VideoState:
     NEW = 10
     INFOING = 15
     INFO = 16
+    INFO_ERROR = 19
     DOWNLOADING = 20
     DOWNLOADED = 30
+    DOWNLOAD_ERROR = 39
     TRANSCODING = 40
     TRANSCODED = 50
+    TRANSCODE_ERROR = 59
     UPLOADING = 60
     UPLOADED = 70
+    UPLOAD_ERROR = 79
 
     @staticmethod
     def to_name(n):
@@ -93,6 +165,11 @@ class VideoState:
         d[VideoState.TRANSCODED] = 'Transcoded'
         d[VideoState.UPLOADING] = 'Uploading'
         d[VideoState.UPLOADED] = 'Uploaded'
+
+        d[VideoState.INFO_ERROR] = 'Info Error'
+        d[VideoState.DOWNLOAD_ERROR] = 'Download Error'
+        d[VideoState.TRANSCODE_ERROR] = 'Transcode Error'
+        d[VideoState.UPLOAD_ERROR] = 'Upload Error'
         return d[n]
 
 
@@ -130,7 +207,11 @@ class Video(BaseModel):
             vid = vid_id
         else:
             try:
-                vid = Video.get(Video.id == vid_id)
+                vid = list(Video.select().where(Video.id == vid_id).limit(1))
+                if len(vid):
+                    vid = vid[0]
+                else:
+                    return False
             except err_class as e:
                 print(str(e))
                 return False
@@ -144,6 +225,40 @@ class Sync(BaseModel):
     youtube = ForeignKeyField(Video, backref="yt_link")
     lbry = ForeignKeyField(Video, backref="lbry_link")
     state = IntegerField(default=0)
+
+
+class Config(BaseModel):
+    k = CharField(primary_key=True)
+    v = CharField(null=True)
+
+    @staticmethod
+    def load():
+        r = Munch()
+        for c in Config.select():
+            r[c.k] = c.v or None
+        return r
+
+    @staticmethod
+    def set_all(form):
+        keys = [
+            'src_channel',
+            'dest_channel',
+            'bid',
+            'tag1',
+            'tag2',
+            'tag3',
+            'language',
+            'license',
+        ]
+
+        for k in keys:
+            if k not in form:
+                raise KeyError(k)
+            if k == 'bid' and not is_float(form[k]):
+                raise ValueError("bid should be a float: got " + str(form[k]))
+            c, _created = Config.get_or_create(k=k)
+            c.v = form[k] or ""
+            c.save()
 
 
 def create_all_tables():

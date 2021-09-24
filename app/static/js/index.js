@@ -87,7 +87,8 @@ function tinyxhr(url, cb, method, post, contentType)
     if(window.updateInterval)
         return;
 
-   window.updateInterval = setInterval(update_frames, 1000 * 8);
+    update_frames()
+    window.updateInterval = setInterval(update_frames, 1000 * 8);
   }
 
   window.stopPoll = function()
@@ -161,12 +162,12 @@ function tinyxhr(url, cb, method, post, contentType)
 
 
   document.getElementById('toast_close').addEventListener('click', toastClose);
-  // window.startPoll();
+  window.startPoll();
 
-   window.nav = function(uri)
-   {
-     location.href = uri;
-   };
+  window.nav = function(uri)
+  {
+    location.href = uri;
+  };
 
 })();
 

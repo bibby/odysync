@@ -149,6 +149,11 @@ def worker_status(worker=None, include_lbry=False):
                     "/worker/{}/stop".format(parts[0]),
                     style="error",
                 ),
+                action(
+                    "Wipe",
+                    "/worker/{}/wipe".format(parts[0]),
+                    style="error",
+                ),
             ]
         ))
 
@@ -196,7 +201,7 @@ def worker_queue_sort(worker):
     return 9
 
 
-def lbry_setup_steps():
+def lbry_setup_steps(channels):
     return [
         kv(
             "Valid Wallet",
@@ -227,7 +232,7 @@ def lbry_setup_steps():
         ),
         kv(
             "Channel(s) Indexed",
-            lbry_channel_check(),
+            len(channels) > 0,
             actions=[
                 action(
                     "Index",
@@ -265,10 +270,6 @@ def lbry_wallet_check():
     except Exception as e:
         log.exception(e)
         return False
-
-
-def lbry_channel_check():
-    return True
 
 
 def lbrynet_running():

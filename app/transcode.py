@@ -66,7 +66,9 @@ def find_file(vid_id):
 
 if __name__ == '__main__':
     print("Transcode worker started")
-    force = True
+    force = False
+    cleanup = False
+
     mkdir_p(TRANSCODE_TMP)
 
     while True:
@@ -80,11 +82,15 @@ if __name__ == '__main__':
             vid = Video.set_state(vid_id, VideoState.TRANSCODING)
             new_vid = vid_id + ".mp4"
 
-            if isinstance(vid_id, Video) or force:
-                ret = transcode_video(vid_file, new_vid)
-                for l in ret.get("error", "").split("\n"):
-                    print(l)
-                Video.set_state(vid, VideoState.TRANSCODED)
-                upQ.enqueue(vid_id)
+            try:
+                if isinstance(vid, Video) or force:
+                    ret = transcode_video(vid_file, new_vid, cleanup=cleanup)
+                    for l in ret.get("error", "").split("\n"):
+                        print(l)
+                    Video.set_state(vid, VideoState.TRANSCODED)
+                    upQ.enqueue(vid_id)
+            except Exception as e:
+                print(e)
+                Video.set_state(vid_id, VideoState.TRANSCODE_ERROR)
 
         time.sleep(1)

@@ -18,6 +18,10 @@ class Queue:
     def dequeue(self):
         return redis_client.lpop(self.queue)
 
+    def wipe(self):
+        while len(self):
+            self.dequeue()
+
     def __len__(self):
         return redis_client.llen(self.queue)
 
@@ -42,3 +46,10 @@ TMP_VOLUME = os.environ.get('TMP_VOLUME', '/tmp/odysync')
 INFO_TMP = os.path.join(TMP_VOLUME, 'info')
 DOWN_TMP = os.path.join(TMP_VOLUME, 'down')
 TRANSCODE_TMP = os.path.join(TMP_VOLUME, 'transcode')
+
+QMap = dict(
+    info=infoQ,
+    download=downQ,
+    transcode=transQ,
+    upload=upQ,
+)
