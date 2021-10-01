@@ -1,16 +1,42 @@
 <div id="videos">
-    <h2>Videos ({{videos | length}})</h2>
+    <h2>Videos ({{vid_count}})</h2>
+    <p>
+        Page {{vid_page}} of {{vid_pages}}<br />
+        <a href="javascript:(Page.turn('videos', 1))">First</a> |
+        <a href="javascript:(Page.prev('videos', {{vid_page}}))">Prev</a> |
+        <a href="javascript:(Page.next('videos', {{vid_page}}))">Next</a> |
+        <a href="javascript:(Page.turn('videos', {{vid_pages}}))">Last</a>
+    </p>
     {% if videos %}
     <small><code>{{now}}</code></small>
     <table class="pure-table">
         <thead>
             <tr>
-                <th>Id</th>
-                <th>Site</th>
-                <th>Channel</th>
-                <th>Title</th>
-                <th>State</th>
-                <th>Actions</th>
+                <th>
+                    <a href="javascript:Page.sort('videos', 'id')">
+                    Id
+                    </a>
+                </th>
+                <th>
+                    <a href="javascript:Page.sort('videos', 'site')">
+                    Site
+                    </a>
+                </th>
+                <th>
+                    <a href="javascript:Page.sort('videos', 'channel')">
+                    Channel
+                    </a>
+                </th>
+                <th>
+                    <a href="javascript:Page.sort('videos', 'title')">
+                    Title
+                    </a>
+                </th>
+                <th>
+                    <a href="javascript:Page.sort('videos', 'state')">
+                    State
+                    </a>
+                </th>
             </tr>
         </thead>
 
@@ -33,14 +59,6 @@
                 </td>
                 <td>{{item.title}}</td>
                 <td>{{item.state}}</td>
-                <td>
-                    {% for action in item.actions %}
-                    <button class="pure-button button-small{% if action.style %}
-                    button-{{action.style}}{% endif %}">
-                        {{action.text}}
-                    </button>
-                    {% endfor %}
-                </td>
             </tr>
         </tbody>
         {% endfor %}

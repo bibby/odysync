@@ -7,7 +7,7 @@ import hashlib
 from munch import Munch
 from logger import log
 from db.queue import infoQ, downQ, transQ, upQ
-from db.util import kv, yn, action
+from db.util import kv, action
 
 DATA_VOLUME = os.environ.get("DATA_VOLUME", "./vol")
 WALLET_PATH = os.environ.get(
@@ -42,7 +42,7 @@ def shell(cmd, json=True):
         )
 
         out, ret = proc.communicate()[0].decode(), proc.returncode
-        log.info("ret: %s", ret)
+        log.debug("ret: %s", ret)
 
         if json:
             try:
@@ -69,7 +69,7 @@ def shell(cmd, json=True):
             error=str(e)
         )
 
-    log.info(r)
+    log.debug(r)
     return Munch(r)
 
 
@@ -126,8 +126,8 @@ def worker_status(worker=None, include_lbry=False):
                  in line.split('  ')
                  if t.strip()]
 
-        log.info("? worker_status: parts[0]? %s", parts[0])
-        log.info("? worker_status: Workers.LBRYNET.value? %s", Workers.LBRYNET.value)
+        log.debug("? worker_status: parts[0]? %s", parts[0])
+        log.debug("? worker_status: Workers.LBRYNET.value? %s", Workers.LBRYNET.value)
 
         if not include_lbry and parts[0] == Workers.LBRYNET.value:
             continue
@@ -245,7 +245,7 @@ def lbry_setup_steps(channels):
 
 
 def lbry_wallet_check():
-    log.info('wallet_path: %s', WALLET_PATH)
+    log.debug('wallet_path: %s', WALLET_PATH)
 
     if not os.path.isfile(WALLET_PATH):
         log.warn("no wallet file")
@@ -281,8 +281,6 @@ def lbrynet_running():
     if "error" in status:
         log.warning(status.error)
         return False
-
-    log.info("!@ type status: %s", type(status.message))
 
     return status.message.status == 'RUNNING'
 
@@ -320,6 +318,3 @@ def sanitize_wallet(v, k=None):
             return sanitize_string(v)
 
     return v
-
-
-

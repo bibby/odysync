@@ -57,7 +57,9 @@ function tinyxhr(url, cb, method, post, contentType)
     document.getElementById('toggle').classList.toggle('x');
   });
 
-  function update_frames()
+  var frame_updates = {};
+
+  function update_frames(init)
   {
     frames = [
       'workers',
@@ -66,9 +68,22 @@ function tinyxhr(url, cb, method, post, contentType)
 
     frames.forEach(function(f)
     {
+      var now = +(new Date());
+      if(init)
+      {
+        frame_updates[f] = now;
+      }
+
+      if(now - frame_updates[f] < 5000)
+      {
+        return;
+      }
+
+      frame_updates[f] = now;
       var url = "/" + f;
       var callback = function(err, data, xhr)
       {
+        frame_updates[f] = +(new Date);
         if(err)
         {
           console.error(err);
@@ -87,8 +102,8 @@ function tinyxhr(url, cb, method, post, contentType)
     if(window.updateInterval)
         return;
 
-    update_frames()
-    window.updateInterval = setInterval(update_frames, 1000 * 8);
+    update_frames(true)
+    window.updateInterval = setInterval(update_frames, 1000);
   }
 
   window.stopPoll = function()
@@ -174,3 +189,56 @@ function tinyxhr(url, cb, method, post, contentType)
 
 
 
+Page = {
+    prev: function(slug, page)
+    {
+        return Page.turn(slug, page - 1);
+    },
+    next: function(slug, page)
+    {
+        return Page.turn(slug, page + 1);
+    },
+    turn: function(slug, page)
+    {
+        var uri = ([slug, page, this.Sort.field, this.Sort.dir]).join("/");
+        var callback = function(err, data)
+        {
+            if(!err)
+            {
+                document.getElementById(slug).outerHTML = data;
+            }
+        }
+        tinyxhr(uri, callback, "get", false, "text/html");
+    },
+    sort: function(slug, field)
+    {
+        console.log("sort: %s", field);
+        this.Sort.set(field);
+        this.turn(slug, 1);
+    },
+    Sort: {
+        field: 'id',
+        dir: 'asc',
+        ASC: 'asc',
+        DESC: 'desc',
+        set: function(f){
+            if(this.field == f)
+            {
+                this.flipDir();
+            }
+
+            this.field = f;
+        },
+        flipDir: function()
+        {
+            if(this.dir == this.ASC)
+            {
+                this.dir = this.DESC;
+            }
+            else
+            {
+                this.dir = this.ASC;
+            }
+        }
+    }
+};

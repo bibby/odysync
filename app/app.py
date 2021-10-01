@@ -1,5 +1,6 @@
 import os
 import json
+import math
 from munch import Munch, munchify
 from flask import Flask, jsonify, request, render_template, jsonify, redirect
 from db.models import VideoState, Video, Channel, ChannelSite, Config
@@ -11,6 +12,7 @@ from youtube_dl.extractor.youtube import YoutubeTabIE as Info
 from logger import log
 from db.youtube import fetch_channel
 from pybry.lbryd_api import LbrydApi
+from peewee import Asc, Desc
 
 import time
 
@@ -40,9 +42,30 @@ def add_cors_headers(response):
 def index():
     tpl_params = dict(
         channels=get_channels(),
-        videos=get_videos()
+        now=now(),
+        **get_vids(1),
     )
     return render_template('index.j2', **tpl_params)
+
+
+@app.route('/videos/<int:page>/<sort_field>/<sort_dir>')
+def vids(page, sort_field, sort_dir):
+
+    tpl_params = dict(
+        now=now(),
+        **get_vids(page, sort_field, sort_dir),
+    )
+    return render_template('videos.j2', **tpl_params)
+
+
+def get_vids(page, sort_field=None, sort_dir=None):
+    vids, count, page, pages = get_videos(page, sort_field, sort_dir)
+    return dict(
+        videos=vids,
+        vid_pages=pages,
+        vid_count=count,
+        vid_page=page,
+    )
 
 
 @app.route('/wallet/edit', methods=["GET", "POST"])
@@ -157,24 +180,58 @@ def get_channels():
     return chans
 
 
-def get_videos():
+def get_videos(page=None, sort_field=None, sort_dir=None):
     vids = []
-    for v in Video.select():
+    page = int(page or 1)
+    per_page = 100
+    count = Video.select().count()
+    pages = math.ceil(count / per_page)
+    page = min(page, pages)
+    page = max(1, page)
+    sort_field, joined = valid_sort_field(sort_field)
+    sort_dir = valid_sort_dir(sort_dir, sort_field)
+
+    q = Video.select()
+    if joined:
+        q = q.join(Channel)
+
+    q = q.order_by(sort_dir)
+    q = q.limit(per_page).offset(per_page * (page - 1))
+
+    for v in list(q):
         vids.append(v.serial(actions=True))
 
-    return vids
+    return vids, count, page, pages
 
 
-def _get_videos(channel):
-    vids = []
-    for v in Video.select()\
-            .where(Video.channel == channel):
-        vids.append(v.serial())
+def valid_sort_field(f):
+    natural = [
+        'id',
+        'title',
+        'state'
+    ]
+    join = False
 
-    return dict(
-        channel=channel.serial(),
-        vids=vids,
+    if f in natural:
+        return getattr(Video, f), join
+
+    joined = dict(
+        channel=Channel.name,
+        site=Channel.site
     )
+
+    if f in joined:
+        join = True
+        return joined[f], join
+
+    log.warn('invalid sort field: %s', f)
+    return Video.id, False
+
+
+def valid_sort_dir(d, f):
+    if d == 'desc':
+        return Desc(f)
+    return Asc(f)
 
 
 def queue_infos(channel):

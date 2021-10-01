@@ -3,7 +3,8 @@ FROM ubuntu:focal
 ENV DEBIAN_FRONTEND=noninteractive \
     REDIS_HOST=redis \
     APP_PATH=/opt/src/app \
-    DATA_VOLUME=/data
+    DATA_VOLUME=/data \
+    DOCKER=1
 
 RUN apt-get update && \
     apt-get install -y \

@@ -48,6 +48,10 @@ def is_float(num, cast_to=str):
     return cast_to(s)
 
 
+def is_docker():
+    return os.environ.get("DOCKER", None) == str(1)
+
+
 def langs():
     langs = [
         ["en", "English"],
