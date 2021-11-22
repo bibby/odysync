@@ -4,4 +4,4 @@ vol
 *.db-wal
 *.db
 
-app/PyBRY
+#app/PyBRY
