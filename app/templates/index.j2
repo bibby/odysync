@@ -3,6 +3,10 @@
 
 {% block left_column %}
 
+{% if intro %}
+{% include "intro.j2" with context %}
+{% endif %}
+
 {% include "lbry_setup.j2" with context %}
 
 {% include "workers.j2" with context %}

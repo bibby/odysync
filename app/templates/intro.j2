@@ -1,0 +1,22 @@
+<div id="intro">
+    <h3>
+        How to use odysync
+    </h3>
+
+    <h4>
+        Copying your wallet
+    </h4>
+    <p>
+        1.) odysync uses the <a href="https://github.com/lbryio/lbry-sdk">lbry-sdk</a> SDK from github (Dockerfile line 27).
+        As such, it will need a copy of your wallet in order to publish titles to your channel. You <em>could</em> link this via a docker volume,
+        but I didn't want users to risk original files, so instead it expects a copy/paste.
+    </p>
+
+    <p>
+        For your OS, <a href="https://lbry.com/faq/lbry-directories">locate your wallet</a>. If this is your first time locating your wallet, now
+        is a good opportunity to make a backup! For me (on Linux) my wallet file is <code>~/.local/share/lbry/lbryum/wallets/default_wallet</code> .
+        Open this file in a text editor and copy (Ctrl+C) its contents.
+    </p>
+
+
+</div>

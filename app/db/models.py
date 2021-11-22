@@ -239,26 +239,38 @@ class Config(BaseModel):
         return r
 
     @staticmethod
-    def set_all(form):
+    def save_sync_settings(form):
         keys = [
             'src_channel',
             'dest_channel',
             'bid',
-            'tag1',
-            'tag2',
-            'tag3',
+            'tags',
             'language',
             'license',
         ]
+
+        kvs = dict()
 
         for k in keys:
             if k not in form:
                 raise KeyError(k)
             if k == 'bid' and not is_float(form[k]):
                 raise ValueError("bid should be a float: got " + str(form[k]))
-            c, _created = Config.get_or_create(k=k)
-            c.v = form[k] or ""
-            c.save()
+            kvs[k] = form[v]
+
+        return Config.set_all(kvs)
+
+
+    @staticmethod
+    def set_all(kvs):
+        for k in kvs:
+            Config.set(k, kvs[k])
+
+    @staticmethod
+    def set(k, v):
+        c, _created = Config.get_or_create(k=k)
+        c.v = v or ""
+        c.save()
 
 
 def create_all_tables():

@@ -40,11 +40,18 @@ def add_cors_headers(response):
 
 @app.route('/')
 def index():
-    tpl_params = dict(
+    tpl_params = Munch(
         channels=get_channels(),
         now=now(),
+        intro=False,
         **get_vids(1),
     )
+
+    conf = Config.load()
+    if "intro" not in conf or conf.intro != 'True':
+        tpl_params.intro = True
+        Config.set("intro", True)
+
     return render_template('index.j2', **tpl_params)
 
 
@@ -367,7 +374,7 @@ def sync_config():
     message = None
     if request.method == 'POST':
         try:
-            Config.set_all(request.form)
+            Config.save_sync_settings(request.form)
             message = "Saved settings"
         except Exception as e:
             error = str(e)
@@ -383,9 +390,7 @@ def sync_config():
     settings = Munch(
         language=None,
         licence=None,
-        tag1=None,
-        tag2=None,
-        tag3=None,
+        tags=None,
         bid=DEFAULT_BID,
     )
 
@@ -412,5 +417,3 @@ def sync_config():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=os.environ.get('WEBPORT', 3000))
-
-
